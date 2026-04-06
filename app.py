@@ -40,7 +40,7 @@ FIG_DPI = 110
 # Pass Data
 # ==========================
 df_passes = pd.DataFrame([
-    ("PASS WON",  65.15, 26.54, 99.40, 22.38, None),
+    ("PASS WON",  65.15, 26.54, 99.40, 22.38, "videos/Pass.mp4"),
     ("PASS LOST", 62.99,  7.09, 71.30,  2.93, None),
     ("PASS LOST", 46.70, 45.82, 42.88, 67.10, None),
     ("PASS LOST", 93.91, 49.81, 100.23, 58.12, None),
@@ -51,12 +51,12 @@ df_passes["number"] = np.arange(1, len(df_passes) + 1)
 # Duel Data
 # ==========================
 df_duels = pd.DataFrame([
-    ("FOUL COMMITTED",        88.92,  4.09, None),
-    ("FOUL COMMITTED",        30.08, 22.05, None),
-    ("OFFENSIVE DUEL LOST",  106.71, 25.04, None),
-    ("OFFENSIVE DUEL LOST",   27.09, 22.88, None),
-    ("DEFENSIVE DUEL WON",    26.09, 29.03, None),
-    ("DEFENSIVE DUEL WON",    41.38, 22.21, None),
+    ("FOUL COMMITTED",        88.92,  4.09, "videos/1 Foul.mp4"),
+    ("FOUL COMMITTED",        30.08, 22.05, "videos/2 Foul.mp4"),
+    ("OFFENSIVE DUEL LOST",  106.71, 25.04, "videos/1 Duel Of.mp4"),
+    ("OFFENSIVE DUEL LOST",   27.09, 22.88, "videos/2 Duel Of.mp4"),
+    ("DEFENSIVE DUEL WON",    26.09, 29.03, "videos/2 Duel Def.mp4"),
+    ("DEFENSIVE DUEL WON",    41.38, 22.21, "videos/1 Duel Def.mp4"),
 ], columns=["type", "x", "y", "video"])
 df_duels["number"] = np.arange(1, len(df_duels) + 1)
 
