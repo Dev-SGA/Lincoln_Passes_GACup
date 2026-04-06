@@ -14,8 +14,8 @@ from streamlit_image_coordinates import streamlit_image_coordinates
 # ==========================
 # Page Configuration
 # ==========================
-st.set_page_config(layout="wide", page_title="Match Analysis Dashboard - Lincoln Cicala (23min vs Seongnam")
-st.title("Match Analysis Dashboard")
+st.set_page_config(layout="wide", page_title="Match Analysis Dashboard - Lincoln Cicala (23min vs Seongnam)")
+st.title("Match Analysis Dashboard - Lincoln Cicala (23min vs Seongnam)")
 st.caption("Click on the maps to inspect events.")
 
 # ==========================
