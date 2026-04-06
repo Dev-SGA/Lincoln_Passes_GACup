@@ -40,7 +40,7 @@ FIG_DPI = 110
 # Pass Data
 # ==========================
 df_passes = pd.DataFrame([
-    ("PASS WON",  65.15, 26.54, 99.40, 22.38, "videos/Pass.mp4"),
+    ("PASS WON",  65.15, 26.54, 99.40, 22.38, None),
     ("PASS LOST", 62.99,  7.09, 71.30,  2.93, None),
     ("PASS LOST", 46.70, 45.82, 42.88, 67.10, None),
     ("PASS LOST", 93.91, 49.81, 100.23, 58.12, None),
@@ -51,12 +51,12 @@ df_passes["number"] = np.arange(1, len(df_passes) + 1)
 # Duel Data
 # ==========================
 df_duels = pd.DataFrame([
-    ("FOUL COMMITTED",        88.92,  4.09, "videos/1 Foul.mp4"),
-    ("FOUL COMMITTED",        30.08, 22.05, "videos/2 Foul.mp4"),
-    ("OFFENSIVE DUEL LOST",  106.71, 25.04, "videos/1 Duel Of.mp4"),
-    ("OFFENSIVE DUEL LOST",   27.09, 22.88, "videos/2 Duel Of.mp4"),
-    ("DEFENSIVE DUEL WON",    26.09, 29.03, "videos/2 Duel Def.mp4"),
-    ("DEFENSIVE DUEL WON",    41.38, 22.21, "videos/1 Duel Def.mp4"),
+    ("FOUL COMMITTED",        88.92,  4.09, None),
+    ("FOUL COMMITTED",        30.08, 22.05, None),
+    ("OFFENSIVE DUEL LOST",  106.71, 25.04, None),
+    ("OFFENSIVE DUEL LOST",   27.09, 22.88, None),
+    ("DEFENSIVE DUEL WON",    26.09, 29.03, None),
+    ("DEFENSIVE DUEL WON",    41.38, 22.21, None),
 ], columns=["type", "x", "y", "video"])
 df_duels["number"] = np.arange(1, len(df_duels) + 1)
 
@@ -123,29 +123,30 @@ def compute_pass_stats(df: pd.DataFrame) -> dict:
 # ==========================
 # Duel Stats
 # ==========================
+def _duel_group_stats(df_subset):
+    """Calcula total/won/lost/rate para um subset de duelos."""
+    t = len(df_subset)
+    w = int(df_subset["type"].str.contains("WON", case=False).sum()) if t else 0
+    l = t - w
+    r = (w / t * 100) if t else 0
+    return dict(total=t, won=w, lost=l, rate=r)
+
+
 def compute_duel_stats(df: pd.DataFrame) -> dict:
     is_duel = df["type"].str.contains("DUEL|AERIAL", case=False, na=False)
-    is_won = df["type"].str.contains("WON", case=False, na=False)
+    is_off = df["type"].str.contains("OFFENSIVE", case=False, na=False)
+    is_def = df["type"].str.contains("DEFENSIVE", case=False, na=False)
     is_foul = df["type"].str.contains("FOUL", case=False, na=False)
 
-    duels = df[is_duel]
-    d_total = len(duels)
-    d_won = int((duels["type"].str.contains("WON", case=False)).sum()) if d_total else 0
-    d_lost = d_total - d_won
-    d_rate = (d_won / d_total * 100) if d_total else 0
-
-    ft_mask = df["x"] > 80
-    ft_duels = df[ft_mask & is_duel]
-    ft_total = len(ft_duels)
-    ft_won = int((ft_duels["type"].str.contains("WON", case=False)).sum())
-    ft_lost = ft_total - ft_won
-    ft_rate = (ft_won / ft_total * 100) if ft_total else 0
-
+    overall = _duel_group_stats(df[is_duel])
+    offensive = _duel_group_stats(df[is_duel & is_off])
+    defensive = _duel_group_stats(df[is_duel & is_def])
     fouls = int(is_foul.sum())
 
     return dict(
-        d_total=d_total, d_won=d_won, d_lost=d_lost, d_rate=d_rate,
-        ft_total=ft_total, ft_won=ft_won, ft_lost=ft_lost, ft_rate=ft_rate,
+        overall=overall,
+        offensive=offensive,
+        defensive=defensive,
         fouls=fouls,
     )
 
@@ -226,7 +227,6 @@ def draw_pass_map(df: pd.DataFrame):
 def get_duel_style(event_type):
     t = event_type.upper()
     if "FOUL" in t:
-        # Falta cometida → vermelho/laranja
         return "P", (0.90, 0.30, 0.10, 1.00), 130, 0.8
     if "OFFENSIVE" in t:
         if "WON" in t:
@@ -418,23 +418,39 @@ with col_pass_stats:
 with col_duel_stats:
     st.subheader("Duel Statistics")
 
-    st.markdown("**Overall Duels**")
-    c1, c2, c3, c4 = st.columns(4)
-    c1.metric("Total", duel_stats["d_total"])
-    c2.metric("Won", duel_stats["d_won"])
-    c3.metric("Lost", duel_stats["d_lost"])
-    c4.metric("Success %", f"{duel_stats['d_rate']:.1f}%")
+    # ── Overall ──
+    st.markdown("**Overall**")
+    ov = duel_stats["overall"]
+    o1, o2, o3, o4 = st.columns(4)
+    o1.metric("Total", ov["total"])
+    o2.metric("Won", ov["won"])
+    o3.metric("Lost", ov["lost"])
+    o4.metric("Success %", f"{ov['rate']:.1f}%")
 
     st.divider()
 
-    st.markdown("**Final Third Duels**")
-    f1, f2, f3, f4 = st.columns(4)
-    f1.metric("Total", duel_stats["ft_total"])
-    f2.metric("Won", duel_stats["ft_won"])
-    f3.metric("Lost", duel_stats["ft_lost"])
-    f4.metric("Success %", f"{duel_stats['ft_rate']:.1f}%")
+    # ── Offensive Duels ──
+    st.markdown("**Offensive Duels**")
+    off = duel_stats["offensive"]
+    of1, of2, of3, of4 = st.columns(4)
+    of1.metric("Total", off["total"])
+    of2.metric("Won", off["won"])
+    of3.metric("Lost", off["lost"])
+    of4.metric("Success %", f"{off['rate']:.1f}%")
 
     st.divider()
 
+    # ── Defensive Duels ──
+    st.markdown("**Defensive Duels**")
+    dfs = duel_stats["defensive"]
+    df1, df2, df3, df4 = st.columns(4)
+    df1.metric("Total", dfs["total"])
+    df2.metric("Won", dfs["won"])
+    df3.metric("Lost", dfs["lost"])
+    df4.metric("Success %", f"{dfs['rate']:.1f}%")
+
+    st.divider()
+
+    # ── Fouls ──
     st.markdown("**Fouls Committed**")
     st.metric("Total", duel_stats["fouls"])
