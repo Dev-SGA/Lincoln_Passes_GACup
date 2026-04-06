@@ -22,9 +22,6 @@ st.caption("Click on the maps to inspect events.")
 # Configuration
 # ==========================
 FINAL_THIRD_LINE_X = 80
-BOX_X_MIN = 102
-BOX_Y_MIN = 18
-BOX_Y_MAX = 62
 GOAL_X = 120
 GOAL_Y = 40
 
@@ -54,8 +51,8 @@ df_passes["number"] = np.arange(1, len(df_passes) + 1)
 # Duel Data
 # ==========================
 df_duels = pd.DataFrame([
-    ("FOUL WON",              88.92,  4.09, None),
-    ("FOUL WON",              30.08, 22.05, None),
+    ("FOUL COMMITTED",        88.92,  4.09, None),
+    ("FOUL COMMITTED",        30.08, 22.05, None),
     ("OFFENSIVE DUEL LOST",  106.71, 25.04, None),
     ("OFFENSIVE DUEL LOST",   27.09, 22.88, None),
     ("DEFENSIVE DUEL WON",    26.09, 29.03, None),
@@ -117,17 +114,10 @@ def compute_pass_stats(df: pd.DataFrame) -> dict:
     ft_lost = ft_total - ft_won
     ft_acc = (ft_won / ft_total * 100) if ft_total else 0
 
-    bx = (df["x_end"] >= BOX_X_MIN) & (df["y_end"] >= BOX_Y_MIN) & (df["y_end"] <= BOX_Y_MAX)
-    bx_total = int(bx.sum())
-    bx_won = int((bx & df["type"].str.contains("WON", case=False)).sum())
-    bx_lost = bx_total - bx_won
-    bx_acc = (bx_won / bx_total * 100) if bx_total else 0
-
     return dict(
         total=total, won=won, lost=lost, acc=acc,
         prog_total=prog_total, prog_won=prog_won, prog_acc=prog_acc,
         ft_total=ft_total, ft_won=ft_won, ft_lost=ft_lost, ft_acc=ft_acc,
-        bx_total=bx_total, bx_won=bx_won, bx_lost=bx_lost, bx_acc=bx_acc,
     )
 
 # ==========================
@@ -140,7 +130,7 @@ def compute_duel_stats(df: pd.DataFrame) -> dict:
 
     duels = df[is_duel]
     d_total = len(duels)
-    d_won = int(duels[is_won[is_duel.values]].shape[0]) if d_total else 0
+    d_won = int((duels["type"].str.contains("WON", case=False)).sum()) if d_total else 0
     d_lost = d_total - d_won
     d_rate = (d_won / d_total * 100) if d_total else 0
 
@@ -236,7 +226,8 @@ def draw_pass_map(df: pd.DataFrame):
 def get_duel_style(event_type):
     t = event_type.upper()
     if "FOUL" in t:
-        return "P", (1.00, 0.80, 0.00, 1.00), 130, 0.8
+        # Falta cometida → vermelho/laranja
+        return "P", (0.90, 0.30, 0.10, 1.00), 130, 0.8
     if "OFFENSIVE" in t:
         if "WON" in t:
             return "o", (0.10, 0.85, 0.10, 0.95), 110, 0.8
@@ -278,8 +269,8 @@ def draw_duel_map(df: pd.DataFrame):
                markerfacecolor=(0.00, 0.60, 0.00, 0.90), markersize=9, linestyle="None"),
         Line2D([0], [0], marker="D", color="w", label="Defensive Lost",
                markerfacecolor=(0.70, 0.00, 0.00, 0.90), markersize=9, linestyle="None"),
-        Line2D([0], [0], marker="P", color="w", label="Foul Won",
-               markerfacecolor=(1.00, 0.80, 0.00, 1.00), markersize=10, linestyle="None"),
+        Line2D([0], [0], marker="P", color="w", label="Foul Committed",
+               markerfacecolor=(0.90, 0.30, 0.10, 1.00), markersize=10, linestyle="None"),
     ]
     legend = ax.legend(
         handles=legend_elements, loc="upper left", bbox_to_anchor=(0.01, 0.99),
@@ -424,15 +415,6 @@ with col_pass_stats:
     e3.metric("Unsuccessful", pass_stats["ft_lost"])
     e4.metric("Accuracy", f"{pass_stats['ft_acc']:.1f}%")
 
-    st.divider()
-
-    st.markdown("**Into the Box**")
-    g1, g2, g3, g4 = st.columns(4)
-    g1.metric("Total", pass_stats["bx_total"])
-    g2.metric("Successful", pass_stats["bx_won"])
-    g3.metric("Unsuccessful", pass_stats["bx_lost"])
-    g4.metric("Accuracy", f"{pass_stats['bx_acc']:.1f}%")
-
 with col_duel_stats:
     st.subheader("Duel Statistics")
 
@@ -454,5 +436,5 @@ with col_duel_stats:
 
     st.divider()
 
-    st.markdown("**Fouls Won**")
+    st.markdown("**Fouls Committed**")
     st.metric("Total", duel_stats["fouls"])
